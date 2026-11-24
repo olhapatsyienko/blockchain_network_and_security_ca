@@ -1,0 +1,15 @@
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization
+
+
+def load_public_key(path):
+    with open(path, "rb") as f:
+        return serialization.load_pem_public_key(f.read())
+
+
+def verify_signature(message: bytes, signature: bytes, public_key) -> bool:
+    try:
+        public_key.verify(signature, message)
+        return True
+    except InvalidSignature:
+        return False

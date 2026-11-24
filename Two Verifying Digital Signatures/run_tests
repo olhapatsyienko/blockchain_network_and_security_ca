@@ -1,0 +1,36 @@
+import json
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from verify import load_public_key, verify_signature
+
+with open("signed_message.json") as f:
+    data = json.load(f)
+
+orig_msg = data["message"].encode("utf-8")
+orig_sig = bytes.fromhex(data["signature"])
+correct_key = load_public_key("public_key.pem")
+
+# Test 2 input: 10 -> 100, original signature kept
+edited_msg = orig_msg.replace(b"10", b"100")
+
+# Test 3 input: an unrelated second key pair (test harness only)
+other_key = Ed25519PrivateKey.generate().public_key()
+
+# Test 4 input: flip the low bit of the first byte, length unchanged
+sig_bytes = bytearray(orig_sig)
+sig_bytes[0] ^= 0x01
+edited_sig = bytes(sig_bytes)
+
+tests = [
+    ("1 Original message", orig_msg, orig_sig, correct_key, "Accepted"),
+    ("2 Edited message",   edited_msg, orig_sig, correct_key, "Rejected"),
+    ("3 Wrong public key", orig_msg, orig_sig, other_key, "Rejected"),
+    ("4 Edited signature", orig_msg, edited_sig, correct_key, "Rejected"),
+]
+
+print(f"Edited message : {edited_msg.decode()}")
+print(f"Signature byte0: {orig_sig[0]:02x} -> {edited_sig[0]:02x} (len {len(edited_sig)})")
+print()
+print(f"{'Test':<20} {'Expected':<10} {'Actual':<10}")
+for name, m, s, k, expected in tests:
+    actual = "Accepted" if verify_signature(m, s, k) else "Rejected"
+    print(f"{name:<20} {expected:<10} {actual:<10}")

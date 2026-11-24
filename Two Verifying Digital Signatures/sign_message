@@ -1,0 +1,28 @@
+import json
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives import serialization
+
+MESSAGE = "Alice sends Bob 10 tokens".encode("utf-8")  # UTF-8, no trailing newline
+
+private_key = Ed25519PrivateKey.generate()
+public_key = private_key.public_key()
+signature = private_key.sign(MESSAGE)
+
+with open("private_key.pem", "wb") as f:
+    f.write(private_key.private_bytes(
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption()))
+
+with open("public_key.pem", "wb") as f:
+    f.write(public_key.public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo))
+
+with open("signed_message.json", "w") as f:
+    json.dump({"message": MESSAGE.decode("utf-8"),
+               "signature": signature.hex()}, f, indent=2)
+
+print("Message bytes :", len(MESSAGE))
+print("Signature len :", len(signature), "bytes")
+print("Signature hex :", signature.hex())
